@@ -16,6 +16,7 @@ module Aebus
       def initialize(hash)
 
         raise(ArgumentError,"hash cannot be nil") unless hash
+        @keep
         @id = hash.snapshotId
         @start_time = Time.parse(hash.startTime)
         @volume_id = hash.volumeId
@@ -33,12 +34,32 @@ module Aebus
       end
 
       def aebus_tags_include?(label)
-
-        if (@tags.include? AEBUS_TAG) then
+        if aebus_snapshot? then
           aebus_tags = @tags[AEBUS_TAG].split(',')
           return aebus_tags.include? label
         end
         false
+      end
+
+      def aebus_snapshot?
+        @tags.include?(AEBUS_TAG)
+      end
+
+      def aebus_removable_snapshot?
+        (aebus_tags & [AEBUS_MANUAL_TAG, AEBUS_KEEP_TAG]).count == 0
+      end
+
+      def aebus_tags
+        return nil unless aebus_snapshot?
+        @tags[AEBUS_TAG].split(',')
+      end
+
+      def keep= value
+        @keep = value
+      end
+
+      def keep?
+        @keep
       end
 
     end

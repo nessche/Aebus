@@ -4,6 +4,8 @@ module Aebus
 
   module Config
 
+    KEEP_ALL = "all"
+
     class BackupSchedule
 
       attr_reader :label, :last_deadline, :next_deadline, :keep
@@ -48,7 +50,7 @@ module Aebus
 
     class Volume
 
-      attr_reader :last_backup_deadline, :next_backup_deadline, :id, :config
+      attr_reader :id, :config
 
       def initialize(current_time_utc, volume_id, config, default_backups)
 
@@ -84,6 +86,28 @@ module Aebus
         false
       end
 
+      def purgeable_snapshots(snapshots)
+        puts(snapshots.count)
+        removables = snapshots.select{|snapshot| snapshot.aebus_removable_snapshot?}
+        puts(removables.count)
+        available_backups = @backups.each_with_object({}) { | (k, v) , h | h[k] = v.keep}
+        removables.each do |snapshot|
+          snapshot.aebus_tags.each do |tag|
+            if (available_backups.include? tag) then
+              if (KEEP_ALL.eql?(available_backups[tag])) then
+                puts("Keeping snapshot #{snapshot.id} because of all on #{tag}")
+                snapshot.keep = true
+              elsif (available_backups[tag] > 0)  then
+                snapshot.keep = true
+                available_backups[tag] -= 1
+              end
+            end
+          end
+        end
+
+        removables.select{|snapshot| !snapshot.keep? }
+
+      end
 
     end
 

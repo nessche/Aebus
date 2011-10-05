@@ -29,11 +29,13 @@ module Aebus
         volume = config.volumes[target]
         tags = volume.backups_to_be_run(snap_map[target])
         if (tags.count > 0) then
-          puts ("Volume #{target} needs to be backed up. Tags: #{tags.join(',')}")
+          puts ("[INFO] Volume #{target} needs to be backed up. Tags: #{tags.join(',')}")
         else
-          puts ("Volume #{target} does not need to be backed up")
+          puts ("[INFO] Volume #{target} does not need to be backed up")
         end
 
+        purgeable_snapshots =volume.purgeable_snapshots(snap_map[target])
+        puts ("[INFO] Volume #{target} has #{purgeable_snapshots.count} purgeable snapshot(s): #{purgeable_snapshots.inject([]){|x, snap| x << snap.id}.join(',')}")
 
       end
 
@@ -41,6 +43,7 @@ module Aebus
     end
 
     def backup(args, options)
+
       current_time_utc = Time.now.utc
       config = Config::Config.new(File.join(File.dirname("."), options.config), current_time_utc)
       @ec2 = AWS::EC2::Base.new(:access_key_id => config.defaults["access_key_id"],
@@ -67,8 +70,21 @@ module Aebus
             tags << EC2::AEBUS_AUTO_TAG
             puts("[INFO] Creating backup for volume #{target} with tags #{tags.join(',')}")
             backup_volume(target, current_time_utc, tags)
+          else
+            puts ("[INFO] Volume #{target} does not need to be backed up")
           end
 
+        end
+
+        snap_map = get_snapshots_map # we reload the map since we may have created more snapshots
+        if (options.purge) then
+          target_volumes.each do |target|
+            volume = config.volumes[target]
+            purgeable_snapshots = volume.purgeable_snapshots(snap_map[target])
+            purgeable_snapshots.each {|snapshot| purge_snapshot(snapshot.id)}
+          end
+        else
+          puts("[INFO] Skipping purging phase")
         end
 
       end
@@ -172,6 +188,18 @@ module Aebus
         end
       end
       result
+
+    end
+
+    def purge_snapshot(snapshot_id)
+      begin
+        response = @ec2.delete_snapshot(:snapshot_id => snapshot_id)
+        if (response[return]) then
+          puts("[INFO] Purged snapshot #{snapshot_id}")
+        end
+      rescue AWS::Error => e
+        puts("[WARNING] Could not purge snapshot #{snapshot_id}")
+      end
 
     end
 
