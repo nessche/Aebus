@@ -1,0 +1,3 @@
+# Aebus - Automatic EC2 BackUp Software
+
+A small gem that allows you to easily automate EC2 backups, included purging of old backups and checking the backup status
