@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'commander/import'
+require 'pathname'
+require_relative '../lib/aebus'
+
+DEFAULT_CONFIG_NAME = "./aebus.yaml"
+
+program :version, Aebus::VERSION
+program :description, 'Automatic EC2 BackUp Software'
+
+global_option('-c','--config FILE', 'The YAML file containing the backup configuration')
+
+default_command :help
+
+command :status do |c|
+  c.syntax = 'aebus status [options]'
+  c.summary = 'Checks for backup status'
+  c.description = <<-eos
+  Checks for the backup status of a given set of EC2 Volumes.
+  If no volume is specified in the command line, all volumes defined in the config files are checked
+  eos
+  c.example 'Checks the status of all volumes defined in the config file', 'aebus status'
+  c.example 'Checks the status of vol1 and vol2', 'aebus status vol1 vol2'
+
+  c.when_called Aebus::Aebus, :status
+end
+
+command :backup do |c|
+  c.syntax = 'aebus backup [options]'
+  c.summary = 'Backs up  a set of EC2 Volumes'
+  c.description = <<-eos
+    Backs up a set of EC2 Volumes, according to the configuration file. If no volume is specified in the
+    command line, all volumes defined in the config file are backed up
+  eos
+  c.example 'Manually creates backup of vol1 and vol2', 'aebus backup --manual vol1 vol2'
+  c.example 'Create, if needed, backups for all volumes', 'aebus backup'
+  c.option '--manual', 'Starts a manual backup (always creates a snapshot for each volume)'
+  c.when_called do |args, options |
+    options.default \
+      :config => DEFAULT_CONFIG_NAME,
+      :manual => false
+    raise ("Config file does not exist") unless FileTest.exist?(Pathname.new(options.config).realpath)
+    puts("-----Config file-----")
+    aebus = Aebus::Aebus.new
+    aebus.backup(args,options)
+  end
+end
+

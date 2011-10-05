@@ -1,0 +1,23 @@
+default:
+  backup_time: 00:03:00
+  access_key_id: AKIAJFRMUGR5CKQAI3PA
+  secret_access_key: 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
+  zone: eu-west1
+  backups:
+    daily:
+      enabled: true
+      keep: 7
+      when: "0 3 * * *"
+    weekly:
+      enabled: true
+      keep: 5
+      when: "0 3 ? * 1"
+    monthly:
+      enabled: true
+      keep: all
+      when: "0 3 ? * 1#1"
+
+
+vol-60301509:
+
+
