@@ -15,17 +15,34 @@ module Aebus
     AWS_NAME_TAG = "Name"
     AEBUS_TAG = "Aebus"
 
-    ACCESS_KEY_ID = 'AKIAJFRMUGR5CKQAI3PA'
-    SECRET_ACCESS_KEY = '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'
-    SERVER_URL = 'eu-west-1.ec2.amazonaws.com'
-
     def status(args, options)
-      puts("yes")
+      current_time_utc = Time.now.utc
+      config = Config::Config.new(File.join(File.dirname("."), options.config), current_time_utc)
+      @ec2 = AWS::EC2::Base.new(:access_key_id => config.defaults["access_key_id"],
+                               :secret_access_key => config.defaults["secret_access_key"],
+                               :server => zone_to_url(config.defaults["zone"]))
+
+      target_volumes = calculate_target_volumes(config, args)
+      snap_map = get_snapshots_map
+
+      target_volumes.each do |target|
+        volume = config.volumes[target]
+        tags = volume.backups_to_be_run(snap_map[target])
+        if (tags.count > 0) then
+          puts ("Volume #{target} needs to be backed up. Tags: #{tags.join(',')}")
+        else
+          puts ("Volume #{target} does not need to be backed up")
+        end
+
+
+      end
+
+
     end
 
     def backup(args, options)
       current_time_utc = Time.now.utc
-      config = AebusConfig.new(:filename => File.join(File.dirname("."), options.config))
+      config = Config::Config.new(File.join(File.dirname("."), options.config), current_time_utc)
       @ec2 = AWS::EC2::Base.new(:access_key_id => config.defaults["access_key_id"],
                                :secret_access_key => config.defaults["secret_access_key"],
                                :server => zone_to_url(config.defaults["zone"]))
@@ -35,45 +52,26 @@ module Aebus
 
         target_volumes.each do |volume|
 
-          backup_volume(volume, current_time_utc, ["manual"])
+          backup_volume(volume, current_time_utc, [EC2::AEBUS_MANUAL_TAG])
 
         end
 
       else
 
         snap_map = get_snapshots_map
-        puts(config.defaults)
-        puts(config.defaults["backup_time"])
-    #    puts(Time.parse(config.defaults["backup_time"]))
+        target_volumes.each do |target|
 
-        time_to_backup?(config, current_time_utc)
+          volume = config.volumes[target]
+          tags = volume.backups_to_be_run(snap_map[target])
+          if (tags.count > 0) then
+            tags << EC2::AEBUS_AUTO_TAG
+            puts("[INFO] Creating backup for volume #{target} with tags #{tags.join(',')}")
+            backup_volume(target, current_time_utc, tags)
+          end
 
-        #TODO: add the logic to check whether or not a backup is needed
-
-      end
-
-    end
-
-
-    def self.execute(args)
-      config =  AebusConfig.new(:filename => File.join(File.dirname("."), DEFAULT_CONFIG_NAME))
-      puts "----- defaults -----"
-      puts(config.defaults)
-      puts("----- volumes -----")
-      puts(config.volumes)
-    #  ec2 = AWS::EC2::Base.new(:access_key_id => ACCESS_KEY_ID, :secret_access_key => SECRET_ACCESS_KEY, :server => SERVER_URL)
-
-      puts "----- listing images owned by 'amazon' -----"
-      response = ec2.describe_images(:owner_id => 'self')
-      response.imagesSet.item.each do |image|
-        # OpenStruct objects have members!
-        puts(image)
-        image.each_pair do |k,v|
-          puts "#{k} => #{v}"
         end
 
       end
-
 
     end
 
@@ -84,9 +82,7 @@ module Aebus
         result &= args
       end
 
-      puts ("intersection is")
-      puts result
-      return result
+      result
 
     end
 
@@ -175,20 +171,7 @@ module Aebus
           result.store(snapshot.volume_id, vol_array)
         end
       end
-      return result
-
-    end
-
-    def time_to_backup?(snapshots, config, current_time_utc)
-
-      last_midnight = Time.utc(current_time_utc.year, current_time_utc.month, current_time_utc.day)
-      last_backup_chance = last_midnight + config.defaults["backup_time"]
-      if (current_time_utc < last_backup_chance) then
-        last_backup_chance -= 86400
-      end
-
-
-
+      result
 
     end
 

@@ -1,4 +1,6 @@
 require 'yaml'
+require 'cron_parser'
+require_relative 'volume'
 
 module Aebus
 
@@ -10,20 +12,17 @@ module Aebus
 
       attr_reader :defaults, :volumes
 
-      def initialize(options = {})
+      def initialize(filename, current_time_utc)
 
-        yaml_root = YAML::load(File.open(options[:filename]))
+        yaml_root = YAML::load(File.open(filename))
         raise "Cannot find configuration file" unless yaml_root
 
-        puts(yaml_root)
+        @defaults = yaml_root.delete(DEFAULT_STRING)
+        default_backups =  BackupSchedule.parse_backups_config(current_time_utc, @defaults["backups"])
+
         @volumes = Hash.new
         yaml_root.each_pair do |k, v|
-          puts "#{k}"
-          if k.eql?(DEFAULT_STRING) then
-            @defaults = v
-          else
-            @volumes[k] = v
-          end
+          @volumes[k] = Volume.new(current_time_utc, k, v, default_backups)
         end
 
       end
@@ -35,21 +34,23 @@ module Aebus
           result << k
         end
 
-        return result
+        result
 
       end
 
       def get_value_for_volume(volume_id, key)
         result = nil
         if (@volumes.include? volume_id) then
-          if (@volumes[volume_id].include? key) then
-            result = @volumes[volume_id][key]
+          if (@volumes[volume_id].config.include? key) then
+            result = @volumes[volume_id].config[key]
           else
             result = @defaults[key]
           end
         end
-        return result
+       result
       end
+
+
 
 
     end

@@ -24,7 +24,13 @@ command :status do |c|
   c.example 'Checks the status of all volumes defined in the config file', 'aebus status'
   c.example 'Checks the status of vol1 and vol2', 'aebus status vol1 vol2'
 
-  c.when_called Aebus::Aebus, :status
+  c.when_called do |args, options|
+    options.default \
+      :config => DEFAULT_CONFIG_NAME
+    raise ("Config file does not exist") unless FileTest.exist?(Pathname.new(options.config).realpath)
+    aebus = Aebus::Aebus.new
+    aebus.status(args,options)
+  end
 end
 
 command :backup do |c|
@@ -37,12 +43,12 @@ command :backup do |c|
   c.example 'Manually creates backup of vol1 and vol2', 'aebus backup --manual vol1 vol2'
   c.example 'Create, if needed, backups for all volumes', 'aebus backup'
   c.option '--manual', 'Starts a manual backup (always creates a snapshot for each volume)'
-  c.when_called do |args, options |
+  c.option '--no-purge', 'Do not purge expired backups'
+  c.when_called do |args, options|
     options.default \
       :config => DEFAULT_CONFIG_NAME,
       :manual => false
     raise ("Config file does not exist") unless FileTest.exist?(Pathname.new(options.config).realpath)
-    puts("-----Config file-----")
     aebus = Aebus::Aebus.new
     aebus.backup(args,options)
   end

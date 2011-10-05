@@ -1,4 +1,4 @@
-require 'parse-cron'
+require 'cron_parser'
 
 module Aebus
 
@@ -13,11 +13,12 @@ module Aebus
         if (backup_config["enabled"]) then
           calculate_deadlines(current_time_utc, backup_config["when"])
         end
+        @keep = backup_config["keep"]
 
       end
 
       def calculate_deadlines(current_time_utc, when_string)
-        raise (ArgumentError, "when field cannot be empty if the backup is enabled") unless when_string
+        raise(ArgumentError, "when field cannot be empty if the backup is enabled") unless when_string
 
         parser = CronParser.new (when_string)
         @last_deadline = parser.last(current_time_utc)
@@ -25,32 +26,62 @@ module Aebus
 
       end
 
-    end
+      def to_s
+        "Backup Schedule:  label => #{@label}  last_deadline => #{@last_deadline} next_deadline => #{@next_deadline}  keep => #{@keep}"
+      end
 
-    class BackupDeadline
+      def self.parse_backups_config(current_time_utc, backups_config)
 
-      attr_accessor :tags, :time
+        return nil unless backups_config
 
-      def initialize(tags, time)
-        @tags = tags
-        @time = time
+        result = Hash.new
+
+        backups_config.each_pair do |key,value|
+           result.store(key, BackupSchedule.new(current_time_utc, key, value))
+        end
+
+        result
+
       end
 
     end
 
     class Volume
 
-      attr_reader :last_backup_deadline, :next_backup_deadline, :id
+      attr_reader :last_backup_deadline, :next_backup_deadline, :id, :config
 
-      def initialize(current_time_utc, defaults, volume_id, config)
+      def initialize(current_time_utc, volume_id, config, default_backups)
+
+        @config = config
         @id = volume_id
-        calculate_deadlines(current_time_utc, defaults, config)
-
+        @backups = default_backups ? default_backups.dup : Hash.new
+        if (config && config["backups"]) then
+          @backups.merge(BackupSchedule.parse_backups_config(current_time_utc,config["backups"]))
+        end
       end
 
-      def calculate_deadlines(current_time_utc, defaults, config)
+      def backups_to_be_run(snapshots)
 
+        result = Array.new
 
+        @backups.each_pair do |k,v|
+
+           result << k unless recent_backup?(k, snapshots, v.last_deadline)
+
+        end
+        result
+      end
+
+      def recent_backup?(label, snapshots, last_deadline)
+
+        snapshots.each do |snapshot|
+
+          if (snapshot.aebus_tags_include?(label) && (snapshot.start_time > last_deadline))
+            return true
+          end
+
+        end
+        false
       end
 
 
