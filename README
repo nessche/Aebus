@@ -1,32 +1,35 @@
-# Aebus - Automatic EC2 BackUp Software
+= Aebus - Automatic EC2 BackUp Software
 
 A small gem that allows you to easily automate EC2 backups, included purging of old backups and checking the backup status
 
-
-==Sample
-
-default:
-  access_key_id: <your_access_key_id>
-  secret_access_key: <your_secret_access_key>
-  zone: eu-west1
-  backups:
-    daily:
-      enabled: true
-      keep: 7
-      when: 0 3 * * *
-    weekly:
-      enabled: true
-      keep: 5
-      when: 0 3 * * 1
-    monthly:
-      enabled: true
-      keep: all
-      when: 0 3 1 * *
+=== Configuration
 
 
-vol-1234567:
 
-vol-7654321:
-  backups:
-    daily:
-      enabled: false
+==== Sample
+
+  default:
+    access_key_id: <your_access_key_id>
+    secret_access_key: <your_secret_access_key>
+    zone: eu-west1
+    backups:
+      daily:
+        enabled: true
+        keep: 7
+        when: 0 3 * * *
+      weekly:
+        enabled: true
+        keep: 5
+        when: 0 3 * * 1
+      monthly:
+        enabled: true
+        keep: all
+        when: 0 3 1 * *
+
+
+  vol-1234567:
+
+  vol-7654321:
+    backups:
+      daily:
+        enabled: false
