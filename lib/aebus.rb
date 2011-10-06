@@ -3,12 +3,11 @@
 require 'rubygems'
 require 'AWS'
 require_relative 'config/config'
-require_relative 'aebus_zones'
+require_relative 'aebus/version'
+require_relative 'ec2/zones'
 require_relative 'ec2/snapshot'
 
 module Aebus
-
-  VERSION = '0.0.1'
 
   class Aebus
 
@@ -20,7 +19,7 @@ module Aebus
       config = Config::Config.new(File.join(File.dirname("."), options.config), current_time_utc)
       @ec2 = AWS::EC2::Base.new(:access_key_id => config.defaults["access_key_id"],
                                :secret_access_key => config.defaults["secret_access_key"],
-                               :server => zone_to_url(config.defaults["zone"]))
+                               :server => EC2::zone_to_url(config.defaults["zone"]))
 
       target_volumes = calculate_target_volumes(config, args)
       snap_map = get_snapshots_map
@@ -48,7 +47,7 @@ module Aebus
       config = Config::Config.new(File.join(File.dirname("."), options.config), current_time_utc)
       @ec2 = AWS::EC2::Base.new(:access_key_id => config.defaults["access_key_id"],
                                :secret_access_key => config.defaults["secret_access_key"],
-                               :server => zone_to_url(config.defaults["zone"]))
+                               :server => EC2::zone_to_url(config.defaults["zone"]))
 
       target_volumes = calculate_target_volumes(config, args)
       if (options.manual) then
@@ -108,9 +107,7 @@ module Aebus
     end
 
 
-    def zone_to_url(zone)
-      ZONES[zone]
-    end
+
 
     def backup_volume(volume_id, current_time_utc, tags)
       begin
@@ -194,7 +191,7 @@ module Aebus
     def purge_snapshot(snapshot_id)
       begin
         response = @ec2.delete_snapshot(:snapshot_id => snapshot_id)
-        if (response[return]) then
+        if (response["return"]) then
           puts("[INFO] Purged snapshot #{snapshot_id}")
         end
       rescue AWS::Error => e

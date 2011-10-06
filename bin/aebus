@@ -5,6 +5,7 @@ require 'commander/import'
 require 'pathname'
 require_relative '../lib/aebus'
 
+
 DEFAULT_CONFIG_NAME = "./aebus.yaml"
 
 program :version, Aebus::VERSION
