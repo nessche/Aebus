@@ -12,6 +12,7 @@ program :version, Aebus::VERSION
 program :description, 'Automatic EC2 BackUp Software'
 
 global_option('-c','--config FILE', 'The YAML file containing the backup configuration')
+global_option('-l', '--logfile FILE', 'A log file which will receive the output')
 
 default_command :help
 
@@ -28,8 +29,13 @@ command :status do |c|
   c.when_called do |args, options|
     options.default \
       :config => DEFAULT_CONFIG_NAME
-    raise ("Config file does not exist") unless FileTest.exist?(Pathname.new(options.config).realpath)
-    aebus = Aebus::Aebus.new
+    begin
+      FileTest.exist?(Pathname.new(options.config).realpath)
+    rescue Errno::ENOENT => e
+      puts ("Configuration file not found")
+      exit(2)
+    end
+    aebus = Aebus::Core.new
     aebus.status(args,options)
   end
 end
@@ -41,9 +47,9 @@ command :backup do |c|
     Backs up a set of EC2 Volumes, according to the configuration file. If no volume is specified in the
     command line, all volumes defined in the config file are backed up
   eos
-  c.example 'Manually creates backup of vol1 and vol2', 'aebus backup --manual vol1 vol2'
+  c.example 'Manually creates backup of vol1 and vol2', 'aebus backup -m vol1 vol2'
   c.example 'Create, if needed, backups for all volumes', 'aebus backup'
-  c.option '--manual', 'Starts a manual backup (always creates a snapshot for each volume)'
+  c.option '-m', '--manual', 'Starts a manual backup (always creates a snapshot for each volume)'
   c.option '--[no-]purge', 'Do not purge expired backups, defaults to --purge'
   c.when_called do |args, options|
     options.default \
@@ -51,7 +57,7 @@ command :backup do |c|
       :manual => false,
       :purge => true
     raise ("Config file does not exist") unless FileTest.exist?(Pathname.new(options.config).realpath)
-    aebus = Aebus::Aebus.new
+    aebus = Aebus::Core.new
     aebus.backup(args,options)
   end
 end

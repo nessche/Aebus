@@ -62,20 +62,23 @@ module Aebus
         end
       end
 
-      def backups_to_be_run(snapshots)
+      def backups_to_be_run(snapshots,current_time_utc)
 
         result = Array.new
-
+        max_delay = 0
         @backups.each_pair do |k,v|
 
-           result << k unless recent_backup?(k, snapshots, v.last_deadline)
+           unless recent_backup?(k, snapshots, v.last_deadline)
+             result << k
+             max_delay = [max_delay, current_time_utc.to_i - v.last_deadline.to_i].max
+           end
 
         end
-        result
+        [max_delay, result]
       end
 
       def recent_backup?(label, snapshots, last_deadline)
-
+        return false unless snapshots
         snapshots.each do |snapshot|
 
           if (snapshot.aebus_tags_include?(label) && (snapshot.start_time > last_deadline))
@@ -86,16 +89,15 @@ module Aebus
         false
       end
 
+
       def purgeable_snapshots(snapshots)
-        puts(snapshots.count)
+        return [] unless snapshots
         removables = snapshots.select{|snapshot| snapshot.aebus_removable_snapshot?}
-        puts(removables.count)
         available_backups = @backups.each_with_object({}) { | (k, v) , h | h[k] = v.keep}
         removables.each do |snapshot|
           snapshot.aebus_tags.each do |tag|
             if (available_backups.include? tag) then
               if (KEEP_ALL.eql?(available_backups[tag])) then
-                puts("Keeping snapshot #{snapshot.id} because of all on #{tag}")
                 snapshot.keep = true
               elsif (available_backups[tag] > 0)  then
                 snapshot.keep = true
