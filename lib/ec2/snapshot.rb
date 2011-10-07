@@ -35,7 +35,6 @@ module Aebus
 
       def aebus_tags_include?(label)
         if aebus_snapshot? then
-          aebus_tags = @tags[AEBUS_TAG].split(',')
           return aebus_tags.include? label
         end
         false
@@ -46,11 +45,11 @@ module Aebus
       end
 
       def aebus_removable_snapshot?
+        return false unless aebus_snapshot?
         (aebus_tags & [AEBUS_MANUAL_TAG, AEBUS_KEEP_TAG]).count == 0
       end
 
       def aebus_tags
-        return nil unless aebus_snapshot?
         @tags[AEBUS_TAG].split(',')
       end
 

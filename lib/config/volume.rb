@@ -16,6 +16,8 @@ module Aebus
           calculate_deadlines(current_time_utc, backup_config["when"])
         end
         @keep = backup_config["keep"]
+        # we use Infinity to model the keep all
+        @keep = 1.0 / 0  if (@keep.nil? || @keep.eql?(KEEP_ALL))
 
       end
 
@@ -39,7 +41,7 @@ module Aebus
         result = Hash.new
 
         backups_config.each_pair do |key,value|
-           result.store(key, BackupSchedule.new(current_time_utc, key, value))
+          result.store(key, BackupSchedule.new(current_time_utc, key, value))
         end
 
         result
@@ -68,10 +70,10 @@ module Aebus
         max_delay = 0
         @backups.each_pair do |k,v|
 
-           unless recent_backup?(k, snapshots, v.last_deadline)
-             result << k
-             max_delay = [max_delay, current_time_utc.to_i - v.last_deadline.to_i].max
-           end
+          unless recent_backup?(k, snapshots, v.last_deadline)
+            result << k
+            max_delay = [max_delay, current_time_utc.to_i - v.last_deadline.to_i].max
+          end
 
         end
         [max_delay, result]
@@ -90,28 +92,38 @@ module Aebus
       end
 
 
-      def purgeable_snapshots(snapshots)
+      def purgeable_snapshot_ids(snapshots)
         return [] unless snapshots
         removables = snapshots.select{|snapshot| snapshot.aebus_removable_snapshot?}
         available_backups = @backups.each_with_object({}) { | (k, v) , h | h[k] = v.keep}
         removables.each do |snapshot|
           snapshot.aebus_tags.each do |tag|
-            if (available_backups.include? tag) then
-              if (KEEP_ALL.eql?(available_backups[tag])) then
-                snapshot.keep = true
-              elsif (available_backups[tag] > 0)  then
+            if ((available_backups.include? tag) && (available_backups[tag] > 0))  then
                 snapshot.keep = true
                 available_backups[tag] -= 1
-              end
             end
           end
         end
 
-        removables.select{|snapshot| !snapshot.keep? }
+        removables.inject([]) do |acc, snapshot|
+          acc << snapshot.id unless snapshot.keep?
+          acc
+        end
 
       end
 
+      def last_backup
+        @backups.values.map{|backup| backup.last_deadline}.max
+      end
+
+      def next_backup
+        @backups.values.map{|backup| backup.next_deadline}.min
+      end
+
+
     end
+
+
 
   end
 
