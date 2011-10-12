@@ -117,10 +117,9 @@ module Aebus
 
         snap_map = get_snapshots_map
 
-
         target_volumes.each do |target|
 
-          volume = config.volumes[target]
+          volume = @config.volumes[target]
           to_be_run = volume.backups_to_be_run(snap_map[target], @current_time_utc)
           max_delay = [max_delay, to_be_run[0]].max
           tags = to_be_run[1]
@@ -139,7 +138,7 @@ module Aebus
         snap_map = get_snapshots_map # we reload the map since we may have created more snapshots
         if (options.purge) then
           target_volumes.each do |target|
-            volume = config.volumes[target]
+            volume = @config.volumes[target]
             purgeable_snapshot_ids = volume.purgeable_snapshot_ids(snap_map[target])
             purgeable_snapshot_ids.each do |snapshot_id|
               to_purge += 1

@@ -1,2 +1,3 @@
 config/*
 Gemfile.lock
+pkg
