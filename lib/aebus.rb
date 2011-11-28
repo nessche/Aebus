@@ -152,7 +152,7 @@ module Aebus
 
       end
 
-      message = "Backup Completed at #{Time.now}. Checked #{target_volumes.count} volume(s), backed up #{backed_up}, max delay detected #{max_delay},  #{to_purge} snapshot(s), #{purged} purged"
+      message = "Backup Completed at #{Time.now}. Checked #{target_volumes.count} volume(s), backed up #{backed_up}, max delay detected #{max_delay},  #{to_purge} purgeable snapshot(s), #{purged} purged"
       logger.info(message)
       puts(message)
 
