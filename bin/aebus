@@ -51,11 +51,13 @@ command :backup do |c|
   c.example 'Create, if needed, backups for all volumes', 'aebus backup'
   c.option '-m', '--manual', 'Starts a manual backup (always creates a snapshot for each volume)'
   c.option '--[no-]purge', 'Do not purge expired backups, defaults to --purge'
+  c.option '--[no-]mail', 'Mails a report in case something was done, defaults to --mail'
   c.when_called do |args, options|
     options.default \
       :config => DEFAULT_CONFIG_NAME,
       :manual => false,
-      :purge => true
+      :purge => true,
+      :mail => true
     raise ("Config file does not exist") unless FileTest.exist?(Pathname.new(options.config).realpath)
     aebus = Aebus::Core.new
     aebus.backup(args,options)

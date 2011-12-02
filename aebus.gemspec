@@ -21,6 +21,7 @@ Gem::Specification.new do |s|
   s.add_dependency("commander", "~> 4.0.6")
   s.add_dependency("parse-cron", ">= 0.1.1")
   s.add_dependency("amazon-ec2", "~> 0.9.17")
+  s.add_dependency("aws-ses", "~> 0.4.4")
 
   # specify any dependencies here; for example:
   # s.add_development_dependency "rspec"

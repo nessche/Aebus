@@ -2,6 +2,7 @@
 
 require 'rubygems'
 require 'AWS'
+require 'aws/ses'
 require_relative 'config/config'
 require_relative 'aebus/version'
 require_relative 'aebus/logging'
@@ -155,7 +156,9 @@ module Aebus
       message = "Backup Completed at #{Time.now}. Checked #{target_volumes.count} volume(s), backed up #{backed_up}, max delay detected #{max_delay},  #{to_purge} purgeable snapshot(s), #{purged} purged"
       logger.info(message)
       puts(message)
-
+      if to_backup > 0 or to_backup > 0 then
+        send_report message
+      end
     end
 
     def target_volumes(args)
@@ -281,6 +284,29 @@ module Aebus
         logger.error("Target validation failed with message '#{e.message}' Check your configuration")
         false
       end
+
+    end
+
+    def send_report(message)
+      if message.nil? then
+        logger.warn("Tried to send a message, but no message was specified")
+        return
+      end
+      to_address = @config.defaults["to_address"]
+      from_address = @config.defaults["from_address"]
+      if to_address.nil? or from_address.nil? then
+        logger.warn("Tried to send a message but either to or from address where missing from configuration")
+        return
+      end
+      ses = AWS::SES::Base.new(
+        :access_key_id     => @config.defaults["access_key_id"],
+        :secret_access_key => @config.defaults["secret_access_key"]
+      )
+      logger.info("Sending report to #{to_address} from account #{from_address}")
+      ses.send_email :to => [to_address],
+                     :source => from_address,
+                     :subject => "Aebus Report",
+                     :text_body => message
 
     end
 

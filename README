@@ -9,9 +9,12 @@ A small gem that allows you to easily automate EC2 backups, included purging of 
 ==== Sample
 
   default:
+    backup_time: 00:00:00
     access_key_id: <your_access_key_id>
     secret_access_key: <your_secret_access_key>
     zone: eu-west1
+    from_address: <your sender address, must be verified with SES>
+    to_address: <a comma separated list of addresses>
     backups:
       daily:
         enabled: true
