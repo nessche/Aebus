@@ -62,7 +62,7 @@ module Aebus
         vs.delay = to_be_run[0]
         vs.tags = to_be_run[1]
 
-        if (vs.needs_backup?) then
+        if vs.needs_backup?
           logger.info("Volume #{target} needs to be backed up. Tags: #{vs.tags.join(',')}, max delay #{vs.delay}")
           to_backup += 1
         else
@@ -105,6 +105,9 @@ module Aebus
                                 :server => EC2::zone_to_url(@config.defaults["zone"]))
 
       target_volumes = target_volumes(args)
+
+      abort("Configuration contains invalid volumes") unless validate_target_volumes(target_volumes)
+
       if (options.manual) then
 
         target_volumes.each do |volume|
@@ -124,7 +127,7 @@ module Aebus
           to_be_run = volume.backups_to_be_run(snap_map[target], @current_time_utc)
           max_delay = [max_delay, to_be_run[0]].max
           tags = to_be_run[1]
-          if (tags.count > 0) then
+          if tags.count > 0
             tags << EC2::AEBUS_AUTO_TAG
             logger.info("Creating backup for volume #{target} with tags #{tags.join(',')}, max delay #{max_delay}")
             to_backup +=1
@@ -137,7 +140,7 @@ module Aebus
         end
 
         snap_map = get_snapshots_map # we reload the map since we may have created more snapshots
-        if (options.purge) then
+        if options.purge then
           target_volumes.each do |target|
             volume = @config.volumes[target]
             purgeable_snapshot_ids = volume.purgeable_snapshot_ids(snap_map[target])
@@ -153,10 +156,10 @@ module Aebus
 
       end
 
-      message = "Backup Completed at #{Time.now}. Checked #{target_volumes.count} volume(s), backed up #{backed_up}, max delay detected #{max_delay},  #{to_purge} purgeable snapshot(s), #{purged} purged"
+      message = "Backup Completed at #{Time.now}. Checked #{target_volumes.count} volume(s), #{to_backup} to be backed up, #{backed_up} actually backed up, max delay detected #{max_delay}s,  #{to_purge} purgeable snapshot(s), #{purged} purged"
       logger.info(message)
       puts(message)
-      if to_backup > 0 or to_backup > 0 then
+      if to_backup > 0 or to_purge > 0 then
         send_report message
       end
     end
@@ -164,7 +167,7 @@ module Aebus
     def target_volumes(args)
 
       result = @config.volume_ids
-      if (args && (args.count > 0)) then
+      if args && (args.count > 0) then
         result &= args
       end
 
@@ -225,7 +228,7 @@ module Aebus
       name = "backup_#{utc_time.strftime("%Y%m%d")}_#{volume_id}"
       volume_name = volume_id
       tags.each do |tag|
-        if tag["key"].eql?(AWS_NAME_TAG) then
+        if tag["key"].eql?(AWS_NAME_TAG)
           volume_name = tag["value"]
           break
         end
@@ -244,7 +247,7 @@ module Aebus
       result = Hash.new
       snap_array.each do |snap|
         snapshot = EC2::Snapshot.new(snap)
-        if (result.include?(snapshot.volume_id)) then
+        if result.include?(snapshot.volume_id)
           vol_array = result[snapshot.volume_id]
           index = vol_array.index{ |s| snapshot.start_time > s.start_time}
           index ||= vol_array.count
@@ -262,7 +265,7 @@ module Aebus
     def purge_snapshot(snapshot_id)
       begin
         response = @ec2.delete_snapshot(:snapshot_id => snapshot_id)
-        if (response["return"]) then
+        if response["return"]
           logger.info("Purged snapshot #{snapshot_id}")
           true
         else
@@ -288,13 +291,13 @@ module Aebus
     end
 
     def send_report(message)
-      if message.nil? then
+      if message.nil?
         logger.warn("Tried to send a message, but no message was specified")
         return
       end
       to_address = @config.defaults["to_address"]
       from_address = @config.defaults["from_address"]
-      if to_address.nil? or from_address.nil? then
+      if to_address.nil? or from_address.nil?
         logger.warn("Tried to send a message but either to or from address where missing from configuration")
         return
       end
