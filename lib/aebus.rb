@@ -193,7 +193,8 @@ module Aebus
       end
 
       begin
-        volume_tags = volume_info.volumeSet.item[0].tagSet.item
+        tag_set = volume_info.volumeSet.item[0].tagSet
+        volume_tags = (tag_set and tag_set.item) ? tag_set.item : []
 
         name_and_desc = Core.name_and_desc(volume_id, volume_tags, @current_time_utc)
         create_response = @ec2.create_snapshot(:volume_id => volume_id, :description => name_and_desc[1])
@@ -265,7 +266,7 @@ module Aebus
     def purge_snapshot(snapshot_id)
       begin
         response = @ec2.delete_snapshot(:snapshot_id => snapshot_id)
-        if response["return"]
+        if response['return']
           logger.info("Purged snapshot #{snapshot_id}")
           true
         else
@@ -292,13 +293,13 @@ module Aebus
 
     def send_report(message)
       if message.nil?
-        logger.warn("Tried to send a message, but no message was specified")
+        logger.warn('Tried to send a message, but no message was specified')
         return
       end
       to_address = @config.defaults["to_address"]
       from_address = @config.defaults["from_address"]
       if to_address.nil? or from_address.nil?
-        logger.warn("Tried to send a message but either to or from address where missing from configuration")
+        logger.warn('Tried to send a message but either to or from address where missing from configuration')
         return
       end
       ses = AWS::SES::Base.new(
@@ -306,7 +307,7 @@ module Aebus
         :secret_access_key => @config.defaults["secret_access_key"]
       )
       logger.info("Sending report to #{to_address} from account #{from_address}")
-      ses.send_email :to => [to_address],
+      ses.send_email :to => to_address,
                      :source => from_address,
                      :subject => "Aebus Report",
                      :text_body => message
