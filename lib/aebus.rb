@@ -244,6 +244,7 @@ module Aebus
     def get_snapshots_map
 
       response = @ec2.describe_snapshots(:owner => 'self')
+      return Hash.new unless response.snapshotSet
       snap_array = response.snapshotSet.item
       result = Hash.new
       snap_array.each do |snap|
