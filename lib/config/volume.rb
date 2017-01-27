@@ -4,7 +4,7 @@ module Aebus
 
   module Config
 
-    KEEP_ALL = "all"
+    KEEP_ALL = 'all'
 
     class BackupSchedule
 
@@ -12,17 +12,17 @@ module Aebus
 
       def initialize (current_time_utc, label, backup_config)
         @label = label
-        if (backup_config["enabled"]) then
-          calculate_deadlines(current_time_utc, backup_config["when"])
+        if backup_config['enabled']
+          calculate_deadlines(current_time_utc, backup_config['when'])
         end
-        @keep = backup_config["keep"]
+        @keep = backup_config['keep']
         # we use Infinity to model the keep all
         @keep = 1.0 / 0  if (@keep.nil? || @keep.eql?(KEEP_ALL))
 
       end
 
       def calculate_deadlines(current_time_utc, when_string)
-        raise(ArgumentError, "when field cannot be empty if the backup is enabled") unless when_string
+        raise(ArgumentError, 'when field cannot be empty if the backup is enabled') unless when_string
 
         parser = CronParser.new (when_string)
         @last_deadline = parser.last(current_time_utc)
@@ -59,8 +59,8 @@ module Aebus
         @config = config
         @id = volume_id
         @backups = default_backups ? default_backups.dup : Hash.new
-        if (config && config["backups"]) then
-          @backups.merge(BackupSchedule.parse_backups_config(current_time_utc,config["backups"]))
+        if config && config['backups']
+          @backups.merge(BackupSchedule.parse_backups_config(current_time_utc,config['backups']))
         end
       end
 
@@ -83,7 +83,7 @@ module Aebus
         return false unless snapshots
         snapshots.each do |snapshot|
 
-          if (snapshot.aebus_tags_include?(label) && (snapshot.start_time > last_deadline))
+          if snapshot.aebus_tags_include?(label) && (snapshot.start_time > last_deadline)
             return true
           end
 
@@ -98,7 +98,7 @@ module Aebus
         available_backups = @backups.each_with_object({}) { | (k, v) , h | h[k] = v.keep}
         removables.each do |snapshot|
           snapshot.aebus_tags.each do |tag|
-            if ((available_backups.include? tag) && (available_backups[tag] > 0))  then
+            if (available_backups.include? tag) && (available_backups[tag] > 0) then
                 snapshot.keep = true
                 available_backups[tag] -= 1
             end

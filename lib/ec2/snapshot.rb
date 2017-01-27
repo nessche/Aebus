@@ -2,10 +2,10 @@ module Aebus
 
   module EC2
 
-    AEBUS_TAG = "Aebus"
-    AEBUS_MANUAL_TAG = "manual"
-    AEBUS_KEEP_TAG = "keep"
-    AEBUS_AUTO_TAG = "auto"
+    AEBUS_TAG = 'Aebus'
+    AEBUS_MANUAL_TAG = 'manual'
+    AEBUS_KEEP_TAG = 'keep'
+    AEBUS_AUTO_TAG = 'auto'
 
     class Snapshot
 
@@ -15,16 +15,16 @@ module Aebus
 
       def initialize(hash)
 
-        raise(ArgumentError,"hash cannot be nil") unless hash
+        raise(ArgumentError, 'hash cannot be nil') unless hash
         @keep
-        @id = hash.snapshotId
-        @start_time = Time.parse(hash.startTime)
-        @volume_id = hash.volumeId
+        @id = hash.snapshot_id
+        @start_time = hash.start_time
+        @volume_id = hash.volume_id
         @tags = Hash.new
-        if (hash.tagSet) then
-          tag_array = hash.tagSet.item
+        if hash.tags
+          tag_array = hash.tags
           tag_array.each do |tag|
-            @tags.store(tag["key"],tag["value"])
+            @tags.store(tag.key,tag.value)
           end
         end
       end
@@ -34,7 +34,7 @@ module Aebus
       end
 
       def aebus_tags_include?(label)
-        if aebus_snapshot? then
+        if aebus_snapshot?
           return aebus_tags.include? label
         end
         false

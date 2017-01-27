@@ -6,7 +6,7 @@ require 'pathname'
 require_relative '../lib/aebus'
 
 
-DEFAULT_CONFIG_NAME = "./aebus.yaml"
+DEFAULT_CONFIG_NAME = './aebus.yaml'
 
 program :version, Aebus::VERSION
 program :description, 'Automatic EC2 BackUp Software'
@@ -27,12 +27,13 @@ command :status do |c|
   c.example 'Checks the status of vol1 and vol2', 'aebus status vol1 vol2'
 
   c.when_called do |args, options|
-    options.default \
+    options.default(
       :config => DEFAULT_CONFIG_NAME
+    )
     begin
       FileTest.exist?(Pathname.new(options.config).realpath)
-    rescue Errno::ENOENT => e
-      puts ("Configuration file not found")
+    rescue Errno::ENOENT
+      puts ('Configuration file not found')
       exit(2)
     end
     aebus = Aebus::Core.new
@@ -53,12 +54,13 @@ command :backup do |c|
   c.option '--[no-]purge', 'Do not purge expired backups, defaults to --purge'
   c.option '--[no-]mail', 'Mails a report in case something was done, defaults to --mail'
   c.when_called do |args, options|
-    options.default \
+    options.default(
       :config => DEFAULT_CONFIG_NAME,
       :manual => false,
       :purge => true,
       :mail => true
-    raise ("Config file does not exist") unless FileTest.exist?(Pathname.new(options.config).realpath)
+    )
+    raise ('Config file does not exist') unless FileTest.exist?(Pathname.new(options.config).realpath)
     aebus = Aebus::Core.new
     aebus.backup(args,options)
   end

@@ -15,10 +15,10 @@ module Aebus
       def initialize(filename, current_time_utc)
 
         yaml_root = YAML::load(File.open(filename))
-        raise "Cannot find configuration file" unless yaml_root
+        raise 'Cannot find configuration file' unless yaml_root
 
         @defaults = yaml_root.delete(DEFAULT_STRING)
-        default_backups =  BackupSchedule.parse_backups_config(current_time_utc, @defaults["backups"])
+        default_backups =  BackupSchedule.parse_backups_config(current_time_utc, @defaults['backups'])
 
         @volumes = Hash.new
         yaml_root.each_pair do |k, v|
@@ -40,14 +40,14 @@ module Aebus
 
       def get_value_for_volume(volume_id, key)
         result = nil
-        if (@volumes.include? volume_id) then
-          if (@volumes[volume_id].config.include? key) then
+        if @volumes.include? volume_id
+          if @volumes[volume_id].config.include? key
             result = @volumes[volume_id].config[key]
           else
             result = @defaults[key]
           end
         end
-       result
+        result
       end
 
 
