@@ -288,13 +288,8 @@ module Aebus
 
     def purge_snapshot(snapshot_id)
       begin
-        response = @ec2.delete_snapshot(:snapshot_id => snapshot_id)
-        if response['return']
-          logger.info("Purged snapshot #{snapshot_id}")
-          true
-        else
-          false
-        end
+        @ec2.delete_snapshot(:snapshot_id => snapshot_id)
+        logger.info("Purged snapshot #{snapshot_id}")
       rescue Aws::EC2::Errors::ServiceError => e
         logger.warn("Could not purge snapshot #{snapshot_id}; underlying message #{e.message}")
         false
